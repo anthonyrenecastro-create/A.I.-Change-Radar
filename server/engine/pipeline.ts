@@ -12,8 +12,14 @@ export interface CustomerContext {
     activeSeats?: number;
     monthlyTokenVolumeMillions?: number;
     primaryUseCases?: string[];
+    deploymentType?: string;
     confidentialDataHandlingRequired?: boolean;
     baaRequired?: boolean;
+    soc2Required?: boolean;
+    gdprEuAiActRequired?: boolean;
+    criticalityLevel?: string;
+    costThresholdAlertDollars?: number;
+    specialInstructions?: string;
     primaryRegions?: string[];
   };
 }
@@ -322,13 +328,21 @@ Do not invent facts or extrapolate beyond provided evidence.
 `;
 
         const prompt = `
-CUSTOMER CONTEXT:
+CUSTOMER CONTEXT & CUSTOMIZED PARAMETERS:
 - Company: ${ctx.companyName}
 - Industry: ${ctx.industry}
-- Reported Use Cases: ${JSON.stringify(ctx.usageContext.primaryUseCases || [])}
+- Reported Use Cases: ${JSON.stringify(ctx.usageContext.primaryUseCases || ['General Productivity'])}
 - Active Seats: ${ctx.usageContext.activeSeats || 'unknown'}
-- Token Volume: ${ctx.usageContext.monthlyTokenVolumeMillions || 'unknown'}M/mo
-- BAA / Compliance Needed: ${ctx.usageContext.baaRequired || ctx.usageContext.confidentialDataHandlingRequired ? 'Yes' : 'No'}
+- Token Volume: ${ctx.usageContext.monthlyTokenVolumeMillions || 'unknown'}M tokens/mo
+- Deployment Model: ${ctx.usageContext.deploymentType || 'Direct Vendor API'}
+- Criticality: ${ctx.usageContext.criticalityLevel || 'Core Operations'}
+- Compliance / Security: ${[
+  ctx.usageContext.baaRequired ? 'HIPAA BAA Required' : null,
+  ctx.usageContext.confidentialDataHandlingRequired ? 'Zero Model Training Mandate' : null,
+  ctx.usageContext.soc2Required ? 'SOC 2 Type II Mandate' : null,
+  ctx.usageContext.gdprEuAiActRequired ? 'GDPR / EU AI Act High-Risk' : null,
+].filter(Boolean).join(', ') || 'Standard Commercial Terms'}
+- Custom Customer Guidance / Instructions: ${ctx.usageContext.specialInstructions || 'None'}
 
 VENDOR CHANGE EVENT:
 - Vendor: ${evt.vendor_id}
@@ -443,11 +457,20 @@ SOURCE URL: ${evt.final_url}
       applicabilityRationale = `Changes in token prices directly impact unit economics and monthly vendor spend.`;
       businessImplication = estimatedCostDelta || `Rate adjustment observed on official pricing page.`;
     } else if (evt.category === 'security_privacy') {
-      actionCategory = ctx.usageContext.confidentialDataHandlingRequired || ctx.usageContext.baaRequired ? 'action_required' : 'review_recommended';
+      const hasStrictCompliance = ctx.usageContext.confidentialDataHandlingRequired ||
+        ctx.usageContext.baaRequired ||
+        ctx.usageContext.soc2Required ||
+        ctx.usageContext.gdprEuAiActRequired;
+      actionCategory = hasStrictCompliance ? 'action_required' : 'review_recommended';
       applicabilityLevel = 'direct';
       suggestedAction = `Confirm policy updates comply with internal governance and client confidentiality agreements.`;
-      applicabilityRationale = `Crucial for ${ctx.industry} teams with strict regulatory or privacy compliance standards.`;
-      businessImplication = `Defines whether customer prompt data is isolated from foundation model training.`;
+      applicabilityRationale = `Crucial for ${ctx.industry} teams with strict regulatory or privacy compliance standards (${[
+        ctx.usageContext.baaRequired ? 'HIPAA' : null,
+        ctx.usageContext.confidentialDataHandlingRequired ? 'Zero-Training' : null,
+        ctx.usageContext.soc2Required ? 'SOC2' : null,
+        ctx.usageContext.gdprEuAiActRequired ? 'GDPR/EU AI Act' : null,
+      ].filter(Boolean).join(', ') || 'governance terms'}).`;
+      businessImplication = `Defines whether customer prompt data is isolated from foundation model training and compliant with your deployment policy.`;
     }
 
     return {

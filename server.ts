@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { GoogleGenAI, Type } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 import dotenv from 'dotenv';
 import { getDatabase } from './server/db/database';
@@ -30,20 +29,6 @@ const scheduler = new RadarScheduler(db, ingestionService, pipelineEngine, email
 // Start autonomous background scheduler
 scheduler.start();
 
-// Shared Gemini Client Instance for Research Simulator & Pipeline
-const apiKey = process.env.GEMINI_API_KEY;
-let ai: GoogleGenAI | null = null;
-if (apiKey) {
-  ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
-}
-
 const authMiddleware = createAuthMiddleware(db);
 
 // ==========================================
@@ -56,7 +41,7 @@ app.get('/api/health', (req, res) => {
 
   res.json({
     status: 'ok',
-    service: 'AI Change Radar',
+    service: 'AZxAI Radar',
     version: '2.0.0',
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
     emailProvider: emailService.getProviderName(),
@@ -73,8 +58,8 @@ app.get('/api/health', (req, res) => {
 // 2. AUTHENTICATION & ONBOARDING
 // ==========================================
 
-// Sign In
-app.post('/api/auth/signin', (req, res) => {
+// Sign In (Login)
+const handleSignIn = (req: any, res: any) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -110,11 +95,23 @@ app.post('/api/auth/signin', (req, res) => {
       vendorLimit: tenant.vendor_limit,
     },
   });
+};
+
+app.post('/api/auth/signin', handleSignIn);
+app.post('/api/auth/login', handleSignIn);
+
+// Sign Out (Logout)
+app.post('/api/auth/logout', authMiddleware, (req: AuthenticatedRequest, res) => {
+  const token = req.token;
+  if (token) {
+    db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(sha256(token));
+  }
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
 // Self-Serve Sign Up (Onboarding)
-app.post('/api/auth/signup', (req, res) => {
-  const { email, password, companyName, industry, selectedVendors, timezone } = req.body;
+app.post('/api/auth/signup', async (req, res) => {
+  const { email, password, companyName, industry, selectedVendors, timezone, plan, usageContext, deliveryDay } = req.body;
   if (!email || !password || !companyName || !industry) {
     return res.status(400).json({ error: 'Email, password, company name, and industry are required' });
   }
@@ -126,11 +123,13 @@ app.post('/api/auth/signup', (req, res) => {
 
   const tenantId = generateId('tenant');
   const now = Date.now();
-  const vendors = Array.isArray(selectedVendors) ? selectedVendors.slice(0, 3) : ['openai', 'anthropic'];
+  const chosenPlan = plan === 'professional' ? 'professional' : plan === 'enterprise' ? 'enterprise' : 'starter';
+  const vendorLimit = chosenPlan === 'professional' ? 7 : chosenPlan === 'enterprise' ? 999 : 3;
+  const vendors = Array.isArray(selectedVendors) ? selectedVendors.slice(0, vendorLimit) : ['openai', 'anthropic'];
 
   db.prepare(`
     INSERT INTO tenants (id, email, password_hash, company_name, industry, timezone, plan, status, vendor_limit, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, 'starter', 'active', 3, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
   `).run(
     tenantId,
     email.toLowerCase().trim(),
@@ -138,17 +137,21 @@ app.post('/api/auth/signup', (req, res) => {
     companyName.trim(),
     industry.trim(),
     timezone || 'America/New_York',
+    chosenPlan,
+    vendorLimit,
     now,
     now
   );
 
   db.prepare(`
     INSERT INTO tenant_preferences (tenant_id, selected_vendors, delivery_email, delivery_frequency, delivery_day, notify_threshold, usage_context, created_at, updated_at)
-    VALUES (?, ?, ?, 'weekly', 'monday', 'all', '{}', ?, ?)
+    VALUES (?, ?, ?, 'weekly', ?, 'all', ?, ?, ?)
   `).run(
     tenantId,
     JSON.stringify(vendors),
     email.toLowerCase().trim(),
+    deliveryDay || 'monday',
+    JSON.stringify(usageContext || {}),
     now,
     now
   );
@@ -162,6 +165,13 @@ app.post('/api/auth/signup', (req, res) => {
     VALUES (?, ?, 'customer', ?, ?)
   `).run(tokenHash, tenantId, expiresAt, now);
 
+  // Immediately generate initial baseline brief for the new tenant
+  try {
+    await pipelineEngine.processTenantWeeklyBrief(tenantId);
+  } catch (briefErr) {
+    console.warn(`Could not generate initial brief for new tenant ${tenantId}:`, briefErr);
+  }
+
   res.status(201).json({
     token,
     role: 'customer',
@@ -170,8 +180,8 @@ app.post('/api/auth/signup', (req, res) => {
       email,
       companyName,
       industry,
-      plan: 'starter',
-      vendorLimit: 3,
+      plan: chosenPlan,
+      vendorLimit,
     },
   });
 });
@@ -269,6 +279,37 @@ app.put('/api/tenant/preferences', authMiddleware, (req: AuthenticatedRequest, r
   res.json({ success: true, message: 'Preferences updated successfully.' });
 });
 
+// Update / Upgrade Subscription Plan Directly (No Stripe Required)
+app.post('/api/tenant/plan', authMiddleware, (req: AuthenticatedRequest, res) => {
+  const tenant = req.tenant!;
+  const { plan } = req.body;
+  const targetPlan = (plan || 'pro').toLowerCase();
+  const planConfig = PLANS[targetPlan] || PLANS.pro;
+
+  const now = Date.now();
+  db.prepare(`
+    UPDATE tenants
+    SET plan = ?, vendor_limit = ?, updated_at = ?
+    WHERE id = ?
+  `).run(planConfig.id, planConfig.vendorLimit, now, tenant.id);
+
+  const updated = db.prepare('SELECT * FROM tenants WHERE id = ?').get(tenant.id) as any;
+  res.json({
+    success: true,
+    message: `Plan upgraded to ${planConfig.name}. You can now track up to ${planConfig.vendorLimit} vendors.`,
+    tenant: {
+      id: updated.id,
+      email: updated.email,
+      companyName: updated.company_name,
+      company_name: updated.company_name,
+      industry: updated.industry,
+      plan: updated.plan,
+      vendorLimit: updated.vendor_limit,
+      vendor_limit: updated.vendor_limit,
+    },
+  });
+});
+
 // Get Customer Weekly Briefs
 app.get('/api/tenant/briefs', authMiddleware, (req: AuthenticatedRequest, res) => {
   const tenant = req.tenant!;
@@ -322,6 +363,22 @@ app.get('/api/tenant/briefs/:id', authMiddleware, (req: AuthenticatedRequest, re
     },
     items: parsedItems,
   });
+});
+
+// Run On-Demand Analysis / Generate Fresh Brief with Current Customized Parameters
+app.post('/api/tenant/generate-brief', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  const tenant = req.tenant!;
+  try {
+    const result = await pipelineEngine.processTenantWeeklyBrief(tenant.id);
+    res.json({
+      success: true,
+      message: 'Fresh intelligence brief successfully generated.',
+      result,
+    });
+  } catch (err: any) {
+    console.error('Error generating on-demand brief:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate brief' });
+  }
 });
 
 // List All Tracked Vendors Catalog
@@ -636,119 +693,9 @@ app.post('/api/demo/run-scenario', async (req, res) => {
   }
 });
 
-// ==========================================
-// 7. PRESERVED RESEARCH SIMULATOR ENDPOINTS
-// ==========================================
-app.post('/api/gemini/reason', async (req, res) => {
-  try {
-    const { worldStateSummary, userPrompt } = req.body;
-    if (!ai) {
-      return res.json({
-        llmSource: 'heuristic_fallback',
-        rationale: '[Fallback Reasoning] API Key not detected; executing local heuristic substrate adaptation.',
-        confidence: 0.85,
-        activationStrength: 0.75,
-        fieldDeltas: {},
-        cognitiveFocusNodeId: worldStateSummary?.attentionFocusNodeId || 'node_0',
-        strategicGoalAdjustment: userPrompt ? `Orient toward: ${userPrompt}` : null,
-        proposedEvents: [],
-      });
-    }
-
-    const systemInstruction = `
-You are LLM A (Reasoning Engine) inside an HRM (Hierarchical Resilient Model) World-Model Substrate.
-Respond strictly in JSON format.
-`;
-    const prompt = `Current State: ${JSON.stringify(worldStateSummary || {})}; Directive: ${userPrompt || 'none'}`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        systemInstruction,
-        responseMimeType: 'application/json',
-      },
-    });
-
-    return res.json({
-      llmSource: 'gemini-3.8-flash',
-      ...JSON.parse(response.text || '{}'),
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message, llmSource: 'error_fallback' });
-  }
-});
-
-app.post('/api/gemini/critique', async (req, res) => {
-  try {
-    const { worldStateSummary, proposals } = req.body;
-    if (!ai) {
-      return res.json({
-        llmSource: 'heuristic_fallback',
-        critiqueRationale: '[Fallback Critique] Safe mode verified; baseline mechanism weights accepted.',
-        overallConsistencyScore: 0.92,
-        hallucinationRisk: 0.05,
-        mechanismWeightAdjustments: {},
-        vetoedMechanisms: [],
-        safetyWarnings: [],
-      });
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: `Critique world state and proposals: ${JSON.stringify(proposals || [])}`,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    return res.json({
-      llmSource: 'gemini-3.8-flash',
-      ...JSON.parse(response.text || '{}'),
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message, llmSource: 'error_fallback' });
-  }
-});
-
-app.post('/api/gemini/interact', async (req, res) => {
-  try {
-    const { userPrompt, worldStateSummary } = req.body;
-    if (!ai) {
-      return res.json({
-        llmSource: 'heuristic_fallback',
-        llmA: {
-          rationale: `[Substrate Action] Simulated response for prompt: "${userPrompt}". Modifying substrate attractor field.`,
-          confidence: 0.88,
-          activationStrength: 0.9,
-          cognitiveFocusNodeId: 'node_1',
-          fieldDeltas: { node_0: 0.2, node_1: 0.4 },
-        },
-        llmB: {
-          critiqueRationale: 'Substrate input within safety bounds.',
-          overallConsistencyScore: 0.95,
-          hallucinationRisk: 0.03,
-          safetyWarnings: [],
-        },
-        toolActionsExecuted: ['Attractor Field Alignment'],
-      });
-    }
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: `Interact with substrate: ${userPrompt}, state: ${JSON.stringify(worldStateSummary)}`,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
-
-    return res.json({
-      llmSource: 'gemini-3.8-flash',
-      ...JSON.parse(response.text || '{}'),
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
+// 404 handler for unmatched API routes to ensure they always return JSON, not HTML
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
 });
 
 // ==========================================

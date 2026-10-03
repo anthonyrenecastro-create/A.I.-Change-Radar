@@ -21,14 +21,16 @@ import {
 
 interface OwnerConsoleViewProps {
   token: string;
+  onSwitchToOwner?: () => void;
 }
 
-export function OwnerConsoleView({ token }: OwnerConsoleViewProps) {
+export function OwnerConsoleView({ token, onSwitchToOwner }: OwnerConsoleViewProps) {
   const [sources, setSources] = useState<Source[]>([]);
   const [proposals, setProposals] = useState<ReviewProposal[]>([]);
   const [emails, setEmails] = useState<OutboundEmail[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [publicationMode, setPublicationMode] = useState<'reviewed' | 'automatic'>('reviewed');
+  const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'review_queue' | 'sources' | 'emails' | 'jobs'>('review_queue');
   const [loading, setLoading] = useState(false);
@@ -42,54 +44,78 @@ export function OwnerConsoleView({ token }: OwnerConsoleViewProps) {
   const [editedSummary, setEditedSummary] = useState('');
   const [editedAction, setEditedAction] = useState('');
 
-  const fetchConsoleData = async () => {
-    setLoading(true);
+  const safeFetchJson = async (url: string) => {
+    if (!token) return null;
     try {
-      const headers = { Authorization: `Bearer ${token}` };
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        return null;
+      }
+      return await res.json();
+    } catch {
+      return null;
+    }
+  };
 
+  const fetchConsoleData = async () => {
+    if (!token) return;
+    setLoading(true);
+    setIsUnauthorized(false);
+    try {
       // Sources
-      const resSources = await fetch('/api/owner/sources', { headers });
-      if (resSources.ok) {
-        const data = await resSources.json();
-        setSources(data.sources || []);
+      const dataSources = await safeFetchJson('/api/owner/sources');
+      if (dataSources) {
+        if (dataSources.unauthorized) {
+          setIsUnauthorized(true);
+        } else {
+          setSources(dataSources.sources || []);
+        }
       }
 
       // Review Queue
-      const resQueue = await fetch('/api/owner/review-queue', { headers });
-      if (resQueue.ok) {
-        const data = await resQueue.json();
-        setProposals(data.proposals || []);
+      const dataQueue = await safeFetchJson('/api/owner/review-queue');
+      if (dataQueue) {
+        if (dataQueue.unauthorized) {
+          setIsUnauthorized(true);
+        } else {
+          setProposals(dataQueue.proposals || []);
+        }
       }
 
       // Mode
-      const resMode = await fetch('/api/owner/mode', { headers });
-      if (resMode.ok) {
-        const data = await resMode.json();
-        setPublicationMode(data.mode || 'reviewed');
+      const dataMode = await safeFetchJson('/api/owner/mode');
+      if (dataMode && !dataMode.unauthorized) {
+        setPublicationMode(dataMode.mode || 'reviewed');
       }
 
       // Emails
-      const resEmails = await fetch('/api/owner/emails', { headers });
-      if (resEmails.ok) {
-        const data = await resEmails.json();
-        setEmails(data.emails || []);
+      const dataEmails = await safeFetchJson('/api/owner/emails');
+      if (dataEmails && !dataEmails.unauthorized) {
+        setEmails(dataEmails.emails || []);
       }
 
       // Jobs
-      const resJobs = await fetch('/api/owner/jobs', { headers });
-      if (resJobs.ok) {
-        const data = await resJobs.json();
-        setJobs(data.jobs || []);
+      const dataJobs = await safeFetchJson('/api/owner/jobs');
+      if (dataJobs && !dataJobs.unauthorized) {
+        setJobs(dataJobs.jobs || []);
       }
     } catch (err) {
-      console.error('Failed to load owner console data:', err);
+      console.warn('Failed to load owner console data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchConsoleData();
+    if (token) {
+      fetchConsoleData();
+    }
   }, [token]);
 
   const handleToggleMode = async (newMode: 'reviewed' | 'automatic') => {
@@ -164,17 +190,39 @@ export function OwnerConsoleView({ token }: OwnerConsoleViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Unauthorized Notice when viewing as Customer */}
+      {isUnauthorized && (
+        <div className="bg-amber-950/40 border border-amber-700/60 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <div className="text-sm font-bold text-amber-200">
+                Editorial Owner Access Required
+              </div>
+              <div className="text-xs text-amber-300/80 mt-1 max-w-2xl leading-relaxed">
+                You are currently signed in as a Customer tenant. Viewing unredacted raw source evidence feeds, inspecting pending model critique exceptions, and publishing weekly briefs requires Editorial Owner privileges.
+              </div>
+            </div>
+          </div>
+          {onSwitchToOwner && (
+            <button
+              onClick={onSwitchToOwner}
+              className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm whitespace-nowrap transition-colors"
+            >
+              Switch to Editorial Owner
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Banner & Control Deck */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider bg-purple-950 text-purple-300 border border-purple-800/60 px-2.5 py-0.5 rounded">
-                Editorial & Operations Radar
-              </span>
-              <span className="text-xs text-slate-400">
-                Authoritative Gatekeeping & Pipeline Controls
-              </span>
+            <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
+              <span className="font-semibold text-purple-400">Editorial Operations Gate</span>
+              <span aria-hidden="true">·</span>
+              <span>Authoritative Gatekeeping & Pipeline Controls</span>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">
               Owner Editorial Console

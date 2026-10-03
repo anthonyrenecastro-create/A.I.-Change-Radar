@@ -7,12 +7,15 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     company_name: string;
+    companyName: string;
     industry: string;
     plan: string;
     status: string;
     vendor_limit: number;
+    vendorLimit: number;
   };
   userRole?: 'customer' | 'owner';
+  token?: string;
 }
 
 export function createAuthMiddleware(db: DatabaseSync) {
@@ -37,14 +40,17 @@ export function createAuthMiddleware(db: DatabaseSync) {
       return res.status(401).json({ error: 'Invalid or expired session token. Please sign in.' });
     }
 
+    req.token = token;
     req.tenant = {
       id: session.tenant_id,
       email: session.email,
       company_name: session.company_name,
+      companyName: session.company_name,
       industry: session.industry,
       plan: session.plan,
       status: session.status,
       vendor_limit: session.vendor_limit,
+      vendorLimit: session.vendor_limit,
     };
     req.userRole = session.role as 'customer' | 'owner';
 
@@ -54,7 +60,14 @@ export function createAuthMiddleware(db: DatabaseSync) {
 
 export function requireOwnerRole(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   if (req.userRole !== 'owner') {
-    return res.status(403).json({ error: 'Owner/Editorial administrative permissions required.' });
+    return res.status(200).json({
+      error: 'Owner/Editorial administrative permissions required.',
+      unauthorized: true,
+      sources: [],
+      proposals: [],
+      emails: [],
+      jobs: [],
+    });
   }
   next();
 }

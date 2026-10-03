@@ -1,14 +1,12 @@
 # AI Change Radar
 
-**AI Change Radar** is an evidence-backed intelligence and change-monitoring service designed for small and midsize businesses (SMBs). Decision-makers select their industry and tracked AI vendors (OpenAI, Anthropic, Google Gemini, Microsoft Azure, AWS Bedrock, Mistral AI) to receive concise, factual weekly briefings answering five critical questions:
+**AZxAI Radar** is an evidence-backed intelligence and change-monitoring subscription service designed for small and midsize businesses (SMBs). Decision-makers select their industry and tracked AI vendors (OpenAI, Anthropic, Google Gemini, Microsoft Azure, AWS Bedrock, Mistral AI) to receive concise, factual weekly briefings answering five critical questions:
 
 1. **What changed** (concise executive summary)
 2. **Why it matters to their business** (industry-specific implications)
 3. **Whether they should act** (action required vs review recommended vs no action needed, with deadlines)
 4. **A practical next step** (proportionate checklist or mitigation)
 5. **Public supporting sources** (direct quotes, official links, and content hashes)
-
-The foundational research simulation workbench (**HRM Ecology World-Model Substrate**) is preserved in full under the **Research Simulator** tab (`/simulator`).
 
 ---
 

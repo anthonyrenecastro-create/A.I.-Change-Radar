@@ -79,9 +79,26 @@ export interface TenantContext {
   id: string;
   email: string;
   companyName: string;
+  company_name?: string;
   industry: string;
   plan: 'starter' | 'pro' | 'enterprise';
   vendorLimit: number;
+  vendor_limit?: number;
+}
+
+export interface AnalysisParameters {
+  activeSeats?: number;
+  monthlyTokenVolumeMillions?: number;
+  primaryUseCases?: string[];
+  deploymentType?: 'direct_api' | 'cloud_hyperscalers' | 'enterprise_apps' | 'hybrid';
+  confidentialDataHandlingRequired?: boolean;
+  baaRequired?: boolean;
+  soc2Required?: boolean;
+  gdprEuAiActRequired?: boolean;
+  criticalityLevel?: 'mission_critical' | 'business_important' | 'internal_experimentation';
+  costThresholdAlertDollars?: number;
+  specialInstructions?: string;
+  primaryRegions?: string[];
 }
 
 export interface TenantPreferences {
@@ -90,14 +107,7 @@ export interface TenantPreferences {
   deliveryFrequency: string;
   deliveryDay: string;
   notifyThreshold: string;
-  usageContext: {
-    activeSeats?: number;
-    monthlyTokenVolumeMillions?: number;
-    primaryUseCases?: string[];
-    confidentialDataHandlingRequired?: boolean;
-    baaRequired?: boolean;
-    primaryRegions?: string[];
-  };
+  usageContext: AnalysisParameters;
 }
 
 export interface ReviewProposal extends BriefItem {
