@@ -12,8 +12,8 @@ export function SandboxList() {
       {error && <ErrorBox message={error} onRetry={reload} />}
       {data?.decisions.length === 0 && <Empty title="No decisions yet">Start from an <a className="underline" href="#/exposure">affected workflow in Exposure</a>.</Empty>}
       <ul className="grid gap-2">{data?.decisions.map(d => (
-        <li key={d.id} className="rounded-lg border border-slate-200 bg-white p-3 flex flex-wrap justify-between gap-2">
-          <div><a className="font-medium underline" href={`#/sandbox/${d.id}`}>{d.title}</a><div className="text-sm text-slate-600">Workflow: {d.workflowName} · revision {d.latestRevisionNo} · {d.planCount} plan(s) · created {fmtDate(d.createdAt)}</div></div>
+        <li key={d.id} className="rounded-lg border border-slate-800 bg-slate-900 p-3 flex flex-wrap justify-between gap-2">
+          <div><a className="font-medium underline" href={`#/sandbox/${d.id}`}>{d.title}</a><div className="text-sm text-slate-400">Workflow: {d.workflowName} · revision {d.latestRevisionNo} · {d.planCount} plan(s) · created {fmtDate(d.createdAt)}</div></div>
         </li>))}</ul>
     </Page>
   );
@@ -23,7 +23,7 @@ const sv = (value: number | null, prev: SourcedValue): SourcedValue => ({ ...pre
 
 function Sourced({ label, v, onChange, unit }: { label: string; v: SourcedValue; onChange: (v: SourcedValue) => void; unit: string }) {
   return (
-    <fieldset className="rounded border border-slate-200 p-2">
+    <fieldset className="rounded border border-slate-800 p-2">
       <legend className="text-xs font-medium px-1">{label} <span className="text-slate-500">({unit})</span></legend>
       <div className="grid grid-cols-2 gap-1">
         <NumberInput aria-label={`${label} value`} value={v.value} onChange={n => onChange(sv(n, v))} />
@@ -40,7 +40,7 @@ function OptionCard({ o, onChange, wf, result }: { o: ScenarioOption; onChange: 
   const setVol = (c: Case, k: keyof CaseVolumes, n: number | null) => onChange({ ...o, volumes: { ...o.volumes, [c]: { ...o.volumes[c], [k]: n } } });
   const exp = result.cases.expected;
   return (
-    <article className="rounded-xl border border-slate-300 bg-white p-3 grid gap-3 content-start" aria-label={o.label}>
+    <article className="rounded-xl border border-slate-700 bg-slate-900 p-3 grid gap-3 content-start" aria-label={o.label}>
       <header><Badge tone="violet">{kindLabel(o.kind)}</Badge><h3 className="font-semibold mt-1">{o.label}</h3></header>
       {(
         <div className="grid grid-cols-2 gap-2">
@@ -72,13 +72,13 @@ function OptionCard({ o, onChange, wf, result }: { o: ScenarioOption; onChange: 
         <fieldset><legend className="text-xs font-medium">Requirements (your assessment)</legend>
           {wf.requirements.map(r => (
             <label key={r.id} className="flex items-center justify-between gap-2 text-sm"><span>{r.text}</span>
-              <select className="rounded border border-slate-300 text-xs p-1" value={o.requirementFit[r.id] ?? 'unknown'} onChange={e => set('requirementFit', { ...o.requirementFit, [r.id]: e.target.value as RequirementFit })}><option value="unknown">Unknown</option><option value="met">Met</option><option value="unmet">Unmet</option></select></label>))}
+              <select className="rounded border border-slate-700 text-xs p-1" value={o.requirementFit[r.id] ?? 'unknown'} onChange={e => set('requirementFit', { ...o.requirementFit, [r.id]: e.target.value as RequirementFit })}><option value="unknown">Unknown</option><option value="met">Met</option><option value="unmet">Unmet</option></select></label>))}
         </fieldset>)}
       <Field label="Tradeoffs and dependencies"><textarea rows={2} className={inputCls} value={o.tradeoffs} onChange={e => set('tradeoffs', e.target.value)} /></Field>
       <Field label="Assumptions"><textarea rows={2} className={inputCls} value={o.assumptions} onChange={e => set('assumptions', e.target.value)} /></Field>
       <Field label="Supporting evidence (notes or links)"><textarea rows={2} className={inputCls} value={o.evidenceNotes} onChange={e => set('evidenceNotes', e.target.value)} /></Field>
 
-      <section className="rounded-lg bg-slate-50 border border-slate-200 p-2 text-sm" aria-label="Calculated results">
+      <section className="rounded-lg bg-slate-950 border border-slate-800 p-2 text-sm" aria-label="Calculated results">
         <h4 className="font-medium">Calculated results <span className="text-xs font-normal text-slate-500">(deterministic)</span></h4>
         <dl className="grid grid-cols-[1fr_auto] gap-x-2">
           {CASES.map(c => <React.Fragment key={c}><dt className="capitalize">Monthly recurring, {c}</dt><dd className="text-right font-mono">{money(result.cases[c].monthlyRecurring)}</dd></React.Fragment>)}
@@ -86,12 +86,12 @@ function OptionCard({ o, onChange, wf, result }: { o: ScenarioOption; onChange: 
           <dt>vs. current baseline (expected)</dt><dd className="text-right font-mono">{result.monthlyDeltaVsBaseline.expected === null ? 'Unknown' : `${result.monthlyDeltaVsBaseline.expected > 0 ? '+' : ''}${result.monthlyDeltaVsBaseline.expected.toFixed(2)}`}</dd>
           <dt>Horizon total (expected)</dt><dd className="text-right font-mono">{money(result.horizonTotal.expected)}</dd>
         </dl>
-        <details className="mt-1"><summary className="cursor-pointer text-indigo-800">Show formulas (expected case)</summary>
+        <details className="mt-1"><summary className="cursor-pointer text-sky-400">Show formulas (expected case)</summary>
           <ul className="text-xs mt-1 grid gap-1">{[...exp.formulas, ...result.oneTimeFormulas].map((f, i) => <li key={i}><span className="font-medium">{f.label}:</span> <code className="break-words">{f.expression}</code> = {f.result === null ? 'unknown' : f.result.toFixed(2)}{f.note && <span className="text-slate-500"> ({f.note})</span>}</li>)}<li><code>{result.horizonFormula}</code></li></ul>
         </details>
-        {result.unmetRequirements.length > 0 && <p className="mt-1 text-red-800">Unmet requirements: {result.unmetRequirements.join('; ')}</p>}
-        {result.unknownRequirements.length > 0 && <p className="mt-1 text-amber-800">Requirement fit unknown: {result.unknownRequirements.join('; ')}</p>}
-        {result.missing.length > 0 && <details className="mt-1"><summary className="cursor-pointer text-amber-900">Missing information ({result.missing.length})</summary><ul className="list-disc ml-5 text-xs">{result.missing.map(m => <li key={m}>{m}</li>)}</ul></details>}
+        {result.unmetRequirements.length > 0 && <p className="mt-1 text-red-300">Unmet requirements: {result.unmetRequirements.join('; ')}</p>}
+        {result.unknownRequirements.length > 0 && <p className="mt-1 text-amber-300">Requirement fit unknown: {result.unknownRequirements.join('; ')}</p>}
+        {result.missing.length > 0 && <details className="mt-1"><summary className="cursor-pointer text-amber-300">Missing information ({result.missing.length})</summary><ul className="list-disc ml-5 text-xs">{result.missing.map(m => <li key={m}>{m}</li>)}</ul></details>}
       </section>
     </article>
   );
@@ -126,11 +126,11 @@ export function SandboxDetail({ id, canWrite }: { id: string; canWrite: boolean 
 
   return (
     <Page title={data.title} question="What happens if we choose this option?" actions={<a className="underline text-sm" href="#/sandbox">All decisions</a>}>
-      <p className="text-sm text-slate-600 mb-3">Workflow: <strong>{wf.name}</strong>{data.change && <> · Change: <a className="underline" href={`#/exposure/${data.change.id}`}>{data.change.title}</a></>}</p>
-      <div role="note" className="rounded-lg bg-slate-100 border border-slate-300 text-sm p-3 mb-4">{computed.disclaimer} Figures are entered by you; nothing here is a vendor price quote or a guarantee.</div>
+      <p className="text-sm text-slate-400 mb-3">Workflow: <strong>{wf.name}</strong>{data.change && <> · Change: <a className="underline" href={`#/exposure/${data.change.id}`}>{data.change.title}</a></>}</p>
+      <div role="note" className="rounded-lg bg-slate-800 border border-slate-700 text-sm p-3 mb-4">{computed.disclaimer} Figures are entered by you; nothing here is a vendor price quote or a guarantee.</div>
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <label className="text-sm">Revision <select className="rounded border border-slate-300 p-1 ml-1" value={data.revision.revisionNo} onChange={e => { setDraft(null); setRev(Number(e.target.value)); }}>{data.revisions.map((r: any) => <option key={r.revisionNo} value={r.revisionNo}>#{r.revisionNo}{r.revisionNo === data.revisions[0].revisionNo ? ' (latest)' : ''} · {fmtDate(r.createdAt)}</option>)}</select></label>
+        <label className="text-sm">Revision <select className="rounded border border-slate-700 p-1 ml-1" value={data.revision.revisionNo} onChange={e => { setDraft(null); setRev(Number(e.target.value)); }}>{data.revisions.map((r: any) => <option key={r.revisionNo} value={r.revisionNo}>#{r.revisionNo}{r.revisionNo === data.revisions[0].revisionNo ? ' (latest)' : ''} · {fmtDate(r.createdAt)}</option>)}</select></label>
         {!isLatest && <Badge tone="amber">Viewing an older revision. Saving creates a new latest revision.</Badge>}
         <span className="text-xs text-slate-500">{data.revision.changeNote}</span>
       </div>
@@ -149,7 +149,7 @@ export function SandboxDetail({ id, canWrite }: { id: string; canWrite: boolean 
       </div>
 
       {canWrite && (
-        <div className="sticky bottom-0 bg-white/95 border-t border-slate-200 mt-4 p-3 flex flex-wrap items-end gap-3">
+        <div className="sticky bottom-0 bg-slate-900/95 border-t border-slate-800 mt-4 p-3 flex flex-wrap items-end gap-3">
           <Field label="What changed? (revision note)" className="flex-1 min-w-[16rem]"><input className={inputCls} value={note} onChange={e => setNote(e.target.value)} maxLength={500} /></Field>
           <Btn variant="primary" disabled={busy || !dirty} onClick={saveRevision}>{busy ? 'Saving…' : 'Save as new revision'}</Btn>
           {dirty && <Btn onClick={() => setDraft(null)}>Discard edits</Btn>}

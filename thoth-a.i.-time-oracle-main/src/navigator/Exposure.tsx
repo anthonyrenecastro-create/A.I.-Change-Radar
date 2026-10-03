@@ -15,10 +15,10 @@ export function ExposureList() {
       {data && data.changes.length === 0 && <Empty title="No published changes available">Your plan may not include the change feed, or nothing has been published yet.</Empty>}
       <ul className="grid gap-3">
         {data?.changes.map(({ change, counts }) => (
-          <li key={change.id} className="rounded-xl border border-slate-200 bg-white p-4">
+          <li key={change.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
             <div className="flex flex-wrap items-center gap-2"><Badge tone="violet">{change.vendorName}</Badge><Badge>{kindLabel(change.kind)}</Badge>{change.isDemo && <Badge tone="amber">DEMO DATA</Badge>}</div>
             <h2 className="font-semibold mt-2"><a className="hover:underline" href={`#/exposure/${change.id}`}>{change.title}</a></h2>
-            <p className="text-sm text-slate-600">{change.summary}</p>
+            <p className="text-sm text-slate-400">{change.summary}</p>
             <p className="text-sm mt-2" aria-label="Match counts"><strong>{counts.confirmed}</strong> confirmed · <strong>{counts.possible}</strong> need review · <strong>{counts.insufficient_information}</strong> insufficient information</p>
           </li>
         ))}
@@ -42,10 +42,10 @@ export function ExposureDetail({ id, canWrite }: { id: string; canWrite: boolean
   const Section = ({ title, hint, items, kind }: { title: string; hint: string; items: any[]; kind: 'confirmed' | 'possible' | 'insufficient' }) => (
     <section className="mb-5" aria-labelledby={`h-${kind}`}>
       <h2 id={`h-${kind}`} className="font-semibold">{title} <span className="text-slate-500 font-normal">({items.length})</span></h2>
-      <p className="text-sm text-slate-600 mb-2">{hint}</p>
+      <p className="text-sm text-slate-400 mb-2">{hint}</p>
       {items.length === 0 ? <p className="text-sm text-slate-500 italic">None.</p> : (
         <ul className="grid gap-2">{items.map(m => (
-          <li key={m.workflowId} className="rounded-lg border border-slate-200 bg-white p-3">
+          <li key={m.workflowId} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
             <div className="flex flex-wrap items-center gap-2 justify-between">
               <span className="font-medium">{m.workflow.name} <Badge tone={m.workflow.criticality === 'critical' ? 'red' : 'slate'}>{m.workflow.criticality}</Badge></span>
               <span className="text-xs text-slate-500">rule: {kindLabel(m.rule)}{m.reviewState !== 'unreviewed' && ` · ${m.reviewState}`}</span>
@@ -64,10 +64,10 @@ export function ExposureDetail({ id, canWrite }: { id: string; canWrite: boolean
 
   return (
     <Page title={ch.title} question="Where does this change touch my business?" actions={<a className="underline text-sm" href="#/exposure">All changes</a>}>
-      <div className="flex flex-wrap gap-2 mb-2"><Badge tone="violet">{ch.vendorName}</Badge><Badge>{kindLabel(ch.kind)}</Badge>{ch.isDemo && <Badge tone="amber">DEMO DATA</Badge>}<span className="text-sm text-slate-600">Effective: {fmtDate(ch.effectiveAt)}</span></div>
+      <div className="flex flex-wrap gap-2 mb-2"><Badge tone="violet">{ch.vendorName}</Badge><Badge>{kindLabel(ch.kind)}</Badge>{ch.isDemo && <Badge tone="amber">DEMO DATA</Badge>}<span className="text-sm text-slate-400">Effective: {fmtDate(ch.effectiveAt)}</span></div>
       <p className="mb-1">{ch.summary}</p>
       {ch.evidence.length > 0 && <p className="text-sm mb-3">Evidence: {ch.evidence.map(e => <a key={e.id} className="underline mr-2" href={e.url} target="_blank" rel="noreferrer noopener">{e.label || e.url}</a>)}</p>}
-      <div role="note" className="rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm p-3 mb-4">{data.notice}</div>
+      <div role="note" className="rounded-lg bg-amber-950/40 border border-amber-800 text-amber-200 text-sm p-3 mb-4">{data.notice}</div>
       {err && <ErrorBox message={err} />}
       {data.noInventory && <Empty title="No workflows mapped yet"><a className="underline" href="#/operations">Map your AI operations</a> to see where this touches you.</Empty>}
       <Section kind="confirmed" title="Confirmed matches" hint="An explicit rule matched your recorded vendor and model." items={data.confirmed} />
@@ -77,9 +77,9 @@ export function ExposureDetail({ id, canWrite }: { id: string; canWrite: boolean
       {data.similarDecisions.length > 0 && (
         <section aria-labelledby="h-similar" className="mt-4">
           <h2 id="h-similar" className="font-semibold">Relevant past decisions</h2>
-          <p className="text-sm text-slate-600 mb-2">Surfaced by simple matching rules (not prediction).</p>
+          <p className="text-sm text-slate-400 mb-2">Surfaced by simple matching rules (not prediction).</p>
           <ul className="grid gap-2">{data.similarDecisions.map((s: any) => (
-            <li key={s.entry.decisionId} className="rounded-lg border border-slate-200 bg-white p-3 text-sm"><a className="font-medium underline" href="#/history">{s.entry.title}</a><div className="text-slate-600">Why shown: {s.basis}</div>{s.entry.outcome && <div>Outcome recorded. Success criteria met: {s.entry.outcome.successMet}. {s.entry.outcome.lessons && <>Lesson: “{s.entry.outcome.lessons}”</>}</div>}</li>
+            <li key={s.entry.decisionId} className="rounded-lg border border-slate-800 bg-slate-900 p-3 text-sm"><a className="font-medium underline" href="#/history">{s.entry.title}</a><div className="text-slate-400">Why shown: {s.basis}</div>{s.entry.outcome && <div>Outcome recorded. Success criteria met: {s.entry.outcome.successMet}. {s.entry.outcome.lessons && <>Lesson: “{s.entry.outcome.lessons}”</>}</div>}</li>
           ))}</ul>
         </section>
       )}
@@ -99,8 +99,8 @@ export function Briefs() {
       {data?.weeks.map((w: any) => (
         <section key={w.weekStart} className="mb-5"><h2 className="font-semibold mb-2">Week of {fmtDate(w.weekStart)}</h2>
           <ul className="grid gap-2">{w.items.map((i: any) => (
-            <li key={i.change.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
-              <div className="font-medium">{i.change.vendorName}: {i.change.title}</div><p className="text-slate-600">{i.change.summary}</p>
+            <li key={i.change.id} className="rounded-lg border border-slate-800 bg-slate-900 p-3 text-sm">
+              <div className="font-medium">{i.change.vendorName}: {i.change.title}</div><p className="text-slate-400">{i.change.summary}</p>
               <p className="mt-1">{i.affectedWorkflowIds.length ? <>Touches: {i.affectedWorkflowIds.map((id: string) => <a key={id} className="underline mr-2" href={`#/exposure/${i.change.id}`}>{name(id)}</a>)}</> : 'No workflow matched.'}{i.incompleteWorkflowCount > 0 && ` ${i.incompleteWorkflowCount} workflow(s) have insufficient information.`} <a className="underline" href={`#/exposure/${i.change.id}`}>View exposure</a></p>
             </li>))}</ul></section>
       ))}

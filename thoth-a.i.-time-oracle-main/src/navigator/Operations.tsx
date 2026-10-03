@@ -63,25 +63,25 @@ export function DependencyMap({ workflows, edges, selected, onSelect }: { workfl
     return `depends on ${out}, depended on by ${inn}`;
   };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 mb-4 overflow-x-auto">
-      <p className="text-xs text-slate-600 mb-2">Arrows point from a workflow to what it depends on. Use Tab and Enter to select a workflow; a table with the same information is below.</p>
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-3 mb-4 overflow-x-auto">
+      <p className="text-xs text-slate-400 mb-2">Arrows point from a workflow to what it depends on. Use Tab and Enter to select a workflow; a table with the same information is below.</p>
       <svg width={layout.width} height={layout.height} role="group" aria-label="AI workflow dependency map">
-        <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#64748b" /></marker></defs>
+        <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#94a3b8" /></marker></defs>
         {edges.map(e => {
           const a = layout.pos.get(e.workflowId), b = layout.pos.get(e.dependsOnWorkflowId);
           if (!a || !b) return null;
           const hot = selected === e.workflowId || selected === e.dependsOnWorkflowId;
-          return <line key={e.id} x1={a.x} y1={a.y + layout.H / 2} x2={b.x + layout.W} y2={b.y + layout.H / 2} stroke={hot ? '#4338ca' : '#94a3b8'} strokeWidth={hot ? 2.5 : 1.5} markerEnd="url(#arr)" />;
+          return <line key={e.id} x1={a.x} y1={a.y + layout.H / 2} x2={b.x + layout.W} y2={b.y + layout.H / 2} stroke={hot ? '#38bdf8' : '#475569'} strokeWidth={hot ? 2.5 : 1.5} markerEnd="url(#arr)" />;
         })}
         {workflows.map(w => {
           const p = layout.pos.get(w.id)!;
           const sel = selected === w.id;
           return (
             <g key={w.id} tabIndex={0} role="button" aria-pressed={sel} aria-label={`${w.name}, ${w.criticality} criticality, ${w.vendor || 'vendor unknown'}, ${rel(w.id)}`}
-              onClick={() => onSelect(sel ? null : w.id)} onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSelect(sel ? null : w.id); } }} className="cursor-pointer focus:outline-none [&:focus>rect]:stroke-indigo-600 [&:focus>rect]:stroke-[3px]">
-              <rect x={p.x} y={p.y} width={layout.W} height={layout.H} rx={8} fill={sel ? '#e0e7ff' : '#f8fafc'} stroke="#64748b" strokeWidth={1.5} />
-              <text x={p.x + 10} y={p.y + 24} fontSize={13} fontWeight={600} fill="#0f172a">{w.name.length > 24 ? w.name.slice(0, 23) + '…' : w.name}</text>
-              <text x={p.x + 10} y={p.y + 44} fontSize={11} fill="#334155">{(w.vendor || 'vendor ?') + ' · ' + w.criticality}</text>
+              onClick={() => onSelect(sel ? null : w.id)} onKeyDown={ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onSelect(sel ? null : w.id); } }} className="cursor-pointer focus:outline-none [&:focus>rect]:stroke-sky-400 [&:focus>rect]:stroke-[3px]">
+              <rect x={p.x} y={p.y} width={layout.W} height={layout.H} rx={8} fill={sel ? '#0c4a6e' : '#0f172a'} stroke="#475569" strokeWidth={1.5} />
+              <text x={p.x + 10} y={p.y + 24} fontSize={13} fontWeight={600} fill="#f1f5f9">{w.name.length > 24 ? w.name.slice(0, 23) + '…' : w.name}</text>
+              <text x={p.x + 10} y={p.y + 44} fontSize={11} fill="#94a3b8">{(w.vendor || 'vendor ?') + ' · ' + w.criticality}</text>
             </g>
           );
         })}
@@ -98,16 +98,16 @@ function DependencyTable({ workflows, edges, canWrite, onEdit, onChanged, highli
     try { await del(`/workflows/${w.id}`); onChanged(); } catch (e) { setErr(errText(e)); }
   };
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900">
       {err && <ErrorBox message={err} />}
       <table className="w-full text-sm">
         <caption className="text-left p-3 font-medium">Workflows and dependencies (table alternative to the map)</caption>
-        <thead className="bg-slate-50 text-left"><tr>{['Workflow', 'Criticality', 'Vendor / model', 'Monthly spend', 'Depends on', 'Fallback', 'Data gaps', ''].map(h => <th key={h} scope="col" className="px-3 py-2 font-medium">{h}</th>)}</tr></thead>
+        <thead className="bg-slate-950 text-left"><tr>{['Workflow', 'Criticality', 'Vendor / model', 'Monthly spend', 'Depends on', 'Fallback', 'Data gaps', ''].map(h => <th key={h} scope="col" className="px-3 py-2 font-medium">{h}</th>)}</tr></thead>
         <tbody>
           {workflows.map(w => {
             const gaps = missingFields(w);
             return (
-              <tr key={w.id} className={`border-t border-slate-100 align-top ${highlight === w.id ? 'bg-indigo-50' : ''}`}>
+              <tr key={w.id} className={`border-t border-slate-800 align-top ${highlight === w.id ? 'bg-sky-950/50' : ''}`}>
                 <th scope="row" className="px-3 py-2 text-left font-medium">{w.name}<div className="text-xs font-normal text-slate-500">{w.businessOwner || 'No owner recorded'}</div></th>
                 <td className="px-3 py-2"><Badge tone={critTone[w.criticality]}>{w.criticality}</Badge></td>
                 <td className="px-3 py-2">{w.vendor || <em>unknown</em>} / {w.model || <em>unknown</em>}<div className="text-xs text-slate-500">{kindLabel(w.integrationMethod)}</div></td>
@@ -145,7 +145,7 @@ function WorkflowForm({ initial, id, others, deps, onDone, onCancel }: { initial
   };
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-indigo-200 bg-white p-4 mb-5 grid gap-3 md:grid-cols-3" aria-label={id ? 'Edit workflow' : 'Add workflow'}>
+    <form onSubmit={submit} className="rounded-xl border border-sky-800 bg-slate-900 p-4 mb-5 grid gap-3 md:grid-cols-3" aria-label={id ? 'Edit workflow' : 'Add workflow'}>
       <h2 className="md:col-span-3 font-semibold">{id ? 'Edit workflow' : 'Add workflow'}</h2>
       <Field label="Name *"><input required className={inputCls} value={d.name} onChange={e => set('name', e.target.value)} maxLength={120} /></Field>
       <Field label="Business owner"><input className={inputCls} value={d.businessOwner} onChange={e => set('businessOwner', e.target.value)} /></Field>

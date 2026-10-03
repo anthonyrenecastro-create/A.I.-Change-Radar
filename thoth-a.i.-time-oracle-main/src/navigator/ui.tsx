@@ -19,8 +19,8 @@ export function Page({ title, question, actions, children }: { title: string; qu
     <section aria-labelledby="page-title">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
-          <h1 id="page-title" tabIndex={-1} className="text-2xl font-semibold text-slate-900">{title}</h1>
-          {question && <p className="text-slate-600 mt-1">{question}</p>}
+          <h1 id="page-title" tabIndex={-1} className="text-xl font-bold tracking-tight text-white">{title}</h1>
+          {question && <p className="text-slate-400 mt-1">{question}</p>}
         </div>
         {actions}
       </div>
@@ -30,35 +30,35 @@ export function Page({ title, question, actions, children }: { title: string; qu
 }
 
 export function Loading({ what = 'Loading' }: { what?: string }) {
-  return <div role="status" aria-live="polite" className="flex items-center gap-2 text-slate-600 py-8"><span className="inline-block h-4 w-4 rounded-full border-2 border-slate-300 border-t-indigo-600 animate-spin" aria-hidden />{what}…</div>;
+  return <div role="status" aria-live="polite" className="flex items-center gap-2 text-slate-400 py-8"><span className="inline-block h-4 w-4 rounded-full border-2 border-slate-700 border-t-sky-400 animate-spin" aria-hidden />{what}…</div>;
 }
 
 export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="rounded-lg border border-red-300 bg-red-50 text-red-900 p-3 flex items-center justify-between gap-3">
+    <div role="alert" className="rounded-lg border border-red-800 bg-red-950/40 text-red-200 p-3 flex items-center justify-between gap-3">
       <span>{message}</span>{onRetry && <button className="underline font-medium" onClick={onRetry}>Retry</button>}
     </div>
   );
 }
 
 export function Empty({ title, children }: { title: string; children?: React.ReactNode }) {
-  return <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center"><p className="font-medium text-slate-800">{title}</p><div className="text-slate-600 mt-2 text-sm">{children}</div></div>;
+  return <div className="rounded-xl border border-dashed border-slate-700 bg-slate-900 p-8 text-center"><p className="font-medium text-slate-200">{title}</p><div className="text-slate-400 mt-2 text-sm">{children}</div></div>;
 }
 
 const TONES: Record<string, string> = {
-  green: 'bg-emerald-100 text-emerald-900', amber: 'bg-amber-100 text-amber-900', red: 'bg-red-100 text-red-900', slate: 'bg-slate-100 text-slate-800', blue: 'bg-sky-100 text-sky-900', violet: 'bg-violet-100 text-violet-900',
+  green: 'bg-emerald-950 text-emerald-300 border border-emerald-800', amber: 'bg-amber-950 text-amber-300 border border-amber-800', red: 'bg-red-950 text-red-300 border border-red-800', slate: 'bg-slate-800 text-slate-300 border border-slate-700', blue: 'bg-sky-950 text-sky-300 border border-sky-800', violet: 'bg-violet-950 text-violet-300 border border-violet-800',
 };
-export const Badge = ({ tone = 'slate', children }: { tone?: keyof typeof TONES; children: React.ReactNode }) => <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${TONES[tone]}`}>{children}</span>;
+export const Badge = ({ tone = 'slate', children }: { tone?: keyof typeof TONES; children: React.ReactNode }) => <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-mono font-medium ${TONES[tone]}`}>{children}</span>;
 
 export function Btn({ variant = 'secondary', className = '', ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }) {
-  const v = { primary: 'bg-indigo-700 text-white hover:bg-indigo-800', secondary: 'bg-white border border-slate-300 text-slate-800 hover:bg-slate-50', danger: 'bg-white border border-red-300 text-red-800 hover:bg-red-50', ghost: 'text-indigo-800 hover:bg-indigo-50' }[variant];
-  return <button type="button" {...p} className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${v} ${className}`} />;
+  const v = { primary: 'bg-sky-600 text-white hover:bg-sky-500', secondary: 'bg-slate-900 border border-slate-700 text-slate-200 hover:bg-slate-800', danger: 'bg-slate-900 border border-red-300 text-red-300 hover:bg-red-50', ghost: 'text-sky-400 hover:bg-slate-800' }[variant];
+  return <button type="button" {...p} className={`rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${v} ${className}`} />;
 }
 
 export function Field({ label, hint, children, className = '' }: { label: string; hint?: string; children: React.ReactNode; className?: string }) {
-  return <label className={`block text-sm ${className}`}><span className="font-medium text-slate-800">{label}</span>{hint && <span className="block text-xs text-slate-500">{hint}</span>}<div className="mt-1">{children}</div></label>;
+  return <label className={`block text-sm ${className}`}><span className="font-medium text-slate-200">{label}</span>{hint && <span className="block text-xs text-slate-500">{hint}</span>}<div className="mt-1">{children}</div></label>;
 }
-export const inputCls = 'w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-indigo-600 disabled:bg-slate-100';
+export const inputCls = 'w-full rounded-md border border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-600 px-2 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-sky-500 disabled:bg-slate-900 disabled:text-slate-500';
 
 export function NumberInput({ value, onChange, disabled, placeholder = 'Unknown', step = 'any', ...rest }: { value: number | null; onChange: (v: number | null) => void; disabled?: boolean; placeholder?: string; step?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>) {
   return <input {...rest} type="number" min={0} step={step} disabled={disabled} placeholder={placeholder} className={inputCls} value={value ?? ''} onChange={e => onChange(e.target.value === '' ? null : Number(e.target.value))} />;
