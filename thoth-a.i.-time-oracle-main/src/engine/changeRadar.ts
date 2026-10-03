@@ -17,6 +17,16 @@ export interface EvidenceRecord {
   extractedContent: string;
 }
 
+/** Optional structured facts a curator or extractor attached to a source item. Never inferred by Navigator. */
+export interface StructuredImpact {
+  vendorName?: string;
+  kind?: 'retirement' | 'price_increase' | 'price_decrease' | 'outage' | 'policy' | 'release' | 'other';
+  affectedModels?: string[];
+  summary?: string;
+  implication?: string;
+  action?: string;
+}
+
 export interface SourceItem {
   id: string;
   title: string;
@@ -24,6 +34,7 @@ export interface SourceItem {
   category: ChangeCategory;
   publishedAt: string | null;
   effectiveAt: string | null;
+  structured?: StructuredImpact;
 }
 
 export interface VendorSnapshot {
@@ -42,6 +53,7 @@ export interface ChangeEvent {
   version: number;
   contentHash: string;
   evidenceIds: string[];
+  structured?: StructuredImpact;
 }
 
 export interface BriefItem {
@@ -137,6 +149,7 @@ export function applySnapshot(
         version: 1,
         contentHash,
         evidenceIds: [snapshot.evidence.id],
+        structured: item.structured,
       };
       emitted.set(eventId, event);
       if (!baseline) materialChanges.push(event);
@@ -155,6 +168,7 @@ export function applySnapshot(
       content: item.content,
       publishedAt: item.publishedAt,
       effectiveAt: item.effectiveAt,
+      structured: item.structured ?? existing.structured,
       version: existing.version + 1,
       contentHash,
       evidenceIds: [...new Set([...existing.evidenceIds, snapshot.evidence.id])],

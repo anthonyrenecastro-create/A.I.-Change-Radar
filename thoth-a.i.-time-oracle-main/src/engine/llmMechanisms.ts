@@ -55,7 +55,7 @@ let isCritiquePending = false;
 let lastReasoningStep = -1;
 
 /**
- * Call server endpoint /api/gemini/reason
+ * Call server endpoint /api/lab/gemini/reason
  */
 import { retrieveContextForLLM } from './retrieval';
 
@@ -67,7 +67,7 @@ export async function fetchLLMAReasoning(
   const retrievedContext = retrieveContextForLLM(state, userPrompt);
 
   try {
-    const res = await fetch('/api/gemini/reason', {
+    const res = await fetch('/api/lab/gemini/reason', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -105,7 +105,7 @@ export async function fetchLLMAReasoning(
 }
 
 /**
- * Call server endpoint /api/gemini/critique
+ * Call server endpoint /api/lab/gemini/critique
  */
 export async function fetchLLMBCritique(
   state: Readonly<HRMWorldState>,
@@ -127,7 +127,7 @@ export async function fetchLLMBCritique(
   }));
 
   try {
-    const res = await fetch('/api/gemini/critique', {
+    const res = await fetch('/api/lab/gemini/critique', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ worldStateSummary: summary, proposals: proposalSummaries }),
@@ -153,7 +153,7 @@ export async function fetchLLMBCritique(
 }
 
 /**
- * Call server endpoint /api/gemini/interact for full tri-path user interaction
+ * Call server endpoint /api/lab/gemini/interact for full tri-path user interaction
  */
 export async function fetchTriPathInteract(
   userPrompt: string,
@@ -168,7 +168,7 @@ export async function fetchTriPathInteract(
   };
 
   try {
-    const res = await fetch('/api/gemini/interact', {
+    const res = await fetch('/api/lab/gemini/interact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userPrompt, worldStateSummary: summary }),

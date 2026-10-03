@@ -1,6 +1,6 @@
 {
-  "name": "HRM Ecology",
-  "description": "A Resilient World-Model Substrate and Interactive Runtime Environment",
+  "name": "AZxAI Navigator",
+  "description": "Workflow dependency mapping, decision sandbox, action planning and outcome review. Companion to AI Change Radar.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

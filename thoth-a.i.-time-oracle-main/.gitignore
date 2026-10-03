@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Navigator local data
+data/
+*.db
+*.db-wal
+*.db-shm
